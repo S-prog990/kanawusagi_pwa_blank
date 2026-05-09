@@ -1,4 +1,4 @@
-const CACHE_NAME = 'kanawusagi-pwa-v1';
+const CACHE_NAME = 'kanawusagi-pwa-v20260509fix';
 const ASSETS = [
   './', './index.html', './style.css', './script.js', './manifest.json',
   './assets/default_media.jpg', './assets/icon-192.png', './assets/icon-512.png'
@@ -11,9 +11,17 @@ self.addEventListener('activate', e => {
 });
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
-  e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request).then(res => {
-    const copy = res.clone();
-    caches.open(CACHE_NAME).then(c => c.put(e.request, copy)).catch(()=>{});
-    return res;
-  }).catch(() => caches.match('./index.html'))));
+  e.respondWith(
+    caches.match(e.request, {ignoreSearch:true}).then(cached => {
+      if (cached) return cached;
+      return fetch(e.request).then(res => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then(c => c.put(e.request, copy)).catch(()=>{});
+        return res;
+      }).catch(() => {
+        if (e.request.mode === 'navigate') return caches.match('./index.html');
+        return Response.error();
+      });
+    })
+  );
 });
